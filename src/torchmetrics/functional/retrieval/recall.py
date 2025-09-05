@@ -60,6 +60,12 @@ def retrieval_recall(preds: Tensor, target: Tensor, top_k: Optional[int] = None)
         return tensor(0.0, device=preds.device)
 
     target_filtered = torch.where(preds > 0, target, torch.zeros_like(target))
-    relevant = target_filtered[torch.argsort(preds, dim=-1, descending=True)][:top_k].sum().float()
+    index = torch.argsort(preds, dim=-1, descending=True)[:top_k]
+    relevant = (
+        torch.zero_like(target_filtered, device=target_filtered.device)
+        .scatter_add(dim=-1, index=index, src=target_filtered)
+        .sum()
+        .float()
+    )
 
     return relevant / target.sum()
